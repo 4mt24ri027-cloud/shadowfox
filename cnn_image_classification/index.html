@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision AI | Production Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4facfe;
+            --secondary: #00f2fe;
+            --bg: #0b0e14;
+            --card: #161b22;
+            --text: #e6edf3;
+            --success: #238636;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .dashboard {
+            width: 90%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Glassmorphism Card */
+        .card {
+            background: var(--card);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 { font-weight: 800; font-size: 28px; margin: 0 0 10px 0; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p { color: #8b949e; margin-bottom: 30px; }
+
+        .upload-zone {
+            border: 2px dashed #30363d;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            transition: 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-zone:hover { border-color: var(--primary); background: #1f242c; }
+
+        #imagePreview {
+            width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 8px;
+            display: none;
+            margin-top: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: #000;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: none;
+        }
+
+        /* Terminal Styling */
+        .terminal {
+            background: #010409;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            padding: 15px;
+            font-size: 13px;
+            color: #7ee787;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #30363d;
+        }
+
+        .terminal-header { color: #8b949e; margin-bottom: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            background: #238636;
+            margin-bottom: 20px;
+        }
+
+        #result-display {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="card">
+        <div class="status-badge">API ONLINE</div>
+        <h1>Vision AI Studio</h1>
+        <p>Production Deployment: Prajnesh-v1.0</p>
+
+        <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+            <span id="uploadText">Click to upload training/test image</span>
+            <input type="file" id="fileInput" hidden accept="image/*">
+            <img id="imagePreview">
+        </div>
+
+        <button id="analyzeBtn" class="btn">INITIALIZE INFERENCE</button>
+
+        <div id="prediction-wrap" style="display:none; margin-top: 25px;">
+            <div style="font-size: 12px; color: #8b949e;">CLASSIFICATION RESULT:</div>
+            <div id="result-display">---</div>
+            <div id="conf-display" style="color: var(--secondary); font-weight: bold;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="terminal-header">System Telemetry & JSON Response</div>
+        <div class="terminal" id="terminal">
+            <div>> System Ready...</div>
+            <div>> Waiting for payload...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const terminal = document.getElementById('terminal');
+    const resultDisplay = document.getElementById('result-display');
+    const confDisplay = document.getElementById('conf-display');
+    const uploadText = document.getElementById('uploadText');
+
+    function logToTerminal(message, isJson = false) {
+        const div = document.createElement('div');
+        div.style.marginBottom = "8px";
+        if (isJson) {
+            div.innerHTML = `<span style="color: #d2a8ff">> Response:</span> <pre style="margin:0; color: #a5d6ff;">${JSON.stringify(message, null, 2)}</pre>`;
+        } else {
+            div.innerText = `> ${message}`;
+        }
+        terminal.appendChild(div);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    fileInput.onchange = (e) => {
+        const [file] = fileInput.files;
+        if (file) {
+            imagePreview.src = URL.createObjectURL(file);
+            imagePreview.style.display = 'block';
+            uploadText.style.display = 'none';
+            analyzeBtn.style.display = 'block';
+            logToTerminal(`File loaded: ${file.name}`);
+        }
+    };
+
+    analyzeBtn.onclick = async () => {
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        logToTerminal("Sending POST request to /predict/...");
+        analyzeBtn.innerText = "PROCESSING...";
+        analyzeBtn.disabled = true;
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/predict/', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            logToTerminal(data, true);
+
+            document.getElementById('prediction-wrap').style.display = 'block';
+            resultDisplay.innerText = data.prediction;
+            confDisplay.innerText = `Confidence: ${data.confidence_score}`;
+
+        } catch (err) {
+            logToTerminal("ERROR: Connection failed. Check Uvicorn.");
+        } finally {
+            analyzeBtn.innerText = "INITIALIZE INFERENCE";
+            analyzeBtn.disabled = false;
+        }
+    };
+</script>
+
+</body>
+</html>
