@@ -1,0 +1,23 @@
+# IDE Settings
+.idea/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*/__pycache__/
+
+# Task 1: Specific files to ignore
+cnn_image_classification/telemetry_logs/
+cnn_image_classification/test_images/
+cnn_image_classification/data/
+
+#Task 2:car_price_prediction
+car_price_prediction/data/processed_data
+
+# OS Files
+.DS_Store

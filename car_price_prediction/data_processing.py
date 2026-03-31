@@ -60,3 +60,4 @@ print(f"\n--- Saving final robust data to {output_path} ---")
 df_encoded.to_csv(output_path, index=False)
 print(f"Final Data Shape: {df_encoded.shape}")
 print(" Phase 1: Data processing is  Complete!")
+#the first stage is complete
